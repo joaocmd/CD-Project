@@ -1,0 +1,81 @@
+# To check more avaialble options see:
+# https://matplotlib.org/tutorials/introductory/customizing.html
+
+font.serif : Asap-Regular
+font.variant : normal
+font.size : 10
+
+# AXES
+axes.titlesize : small
+axes.labelsize : x-small
+axes.labelpad : 1
+axes.linewidth : 2
+axes.spines.top : False
+axes.spines.right : False
+axes.spines.bottom : True
+axes.spines.left : True
+axes.axisbelow: True
+axes.grid.axis: both
+
+
+# GRID
+axes.grid : True
+axes3d.grid : True
+grid.linestyle : -
+grid.linewidth : 1
+
+# LINES
+lines.linewidth : 2
+lines.markeredgewidth : 1
+lines.marker: None
+lines.markersize : 2
+
+# PATCH
+patch.linewidth : 1
+
+# SCATTER PLOT
+scatter.marker : o
+
+# TICKS
+xtick.labelsize : x-small
+xtick.direction : inout
+xtick.major.pad : 3
+xtick.major.size : 3
+ytick.labelsize : x-small
+ytick.direction : in
+ytick.major.pad : 3
+ytick.major.size : 3
+
+# BOXPLOT
+boxplot.boxprops.linestyle: -
+boxplot.boxprops.linewidth: 1.0
+boxplot.capprops.linestyle: -
+boxplot.capprops.linewidth: 1.0
+boxplot.flierprops.linestyle: none
+boxplot.flierprops.linewidth: 1.0
+boxplot.flierprops.marker: o
+boxplot.flierprops.markeredgewidth: 1.0
+boxplot.flierprops.markersize: 4.0
+boxplot.meanline: True
+boxplot.meanprops.linestyle: --
+boxplot.meanprops.linewidth: 1.0
+boxplot.meanprops.marker: none
+boxplot.meanprops.markersize: 2.0
+boxplot.medianprops.linestyle: -
+boxplot.medianprops.linewidth: 1.0
+boxplot.notch: False
+boxplot.patchartist: True
+boxplot.showbox: True
+boxplot.showcaps: True
+boxplot.showfliers: True
+boxplot.showmeans: False
+boxplot.vertical: True
+boxplot.whiskerprops.linestyle: -
+boxplot.whiskerprops.linewidth: 1.0
+boxplot.whiskers: 0.75
+
+
+# FIGURE OUTPUT
+figure.figsize      : 4, 3
+figure.dpi          : 150
+
