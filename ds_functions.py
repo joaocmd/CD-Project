@@ -6,6 +6,10 @@ import warnings
 import sklearn.metrics as metrics
 import config as cfg
 import datetime as dt
+import scipy
+import scipy.stats as _stats
+import numpy as np
+import pandas as pd
 
 
 mdates._reset_epoch_test_example()
@@ -147,3 +151,23 @@ def plot_roc_chart(models: dict, tstX: np.ndarray, tstY: np.ndarray, ax: plt.Axe
     for clf in models.keys():
         metrics.plot_roc_curve(models[clf], tstX, tstY, ax=ax, marker='', linewidth=1)
     ax.legend(loc="lower right")
+
+def compute_known_distributions(x_values: list) -> dict:
+    distributions = dict()
+    # Gaussian
+    mean, sigma = _stats.norm.fit(x_values)
+    distributions['Normal(%.1f,%.2f)'%(mean,sigma)] = _stats.norm.pdf(x_values, mean, sigma)
+    # Exponential
+    loc, scale = _stats.expon.fit(x_values)
+    distributions['Exp(%.2f)'%(1/scale)] = _stats.expon.pdf(x_values, loc, scale)
+    # LogNorm
+    sigma, loc, scale = _stats.lognorm.fit(x_values)
+    distributions['LogNor(%.1f,%.2f)'%(np.log(scale),sigma)] = _stats.lognorm.pdf(x_values, sigma, loc, scale)
+    return distributions
+
+def histogram_with_distributions(ax: plt.Axes, series: pd.Series, var: str):
+    values = series.sort_values().values
+    ax.hist(values, 20, density=True)
+    distributions = compute_known_distributions(values)
+    multiple_line_chart(values, distributions, ax=ax, title='Best fit for %s'%var, xlabel=var, ylabel='')
+
