@@ -170,4 +170,3 @@ def histogram_with_distributions(ax: plt.Axes, series: pd.Series, var: str):
     ax.hist(values, 20, density=True)
     distributions = compute_known_distributions(values)
     multiple_line_chart(values, distributions, ax=ax, title='Best fit for %s'%var, xlabel=var, ylabel='')
-
