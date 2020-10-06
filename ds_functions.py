@@ -165,8 +165,8 @@ def compute_known_distributions(x_values: list) -> dict:
     distributions['LogNor(%.1f,%.2f)'%(np.log(scale),sigma)] = _stats.lognorm.pdf(x_values, sigma, loc, scale)
     return distributions
 
-def histogram_with_distributions(ax: plt.Axes, series: pd.Series, var: str):
+def histogram_with_distributions(ax: plt.Axes, series: pd.Series, var: str, bins=20):
     values = series.sort_values().values
-    ax.hist(values, 20, density=True)
+    ax.hist(values, bins, density=True)
     distributions = compute_known_distributions(values)
     multiple_line_chart(values, distributions, ax=ax, title='Best fit for %s'%var, xlabel=var, ylabel='')
