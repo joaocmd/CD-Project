@@ -15,9 +15,10 @@ hf_data['sex'] = hf_data['sex'].map({1: 'Male', 0: 'Female'})
 
 # Toxicity data
 t_data = pd.read_csv('data/qsar_oral_toxicity.csv', sep=';', header=None)
+t_data[t_data.columns[-1]] = t_data[t_data.columns[-1]].astype('category')
+t_data.rename(columns={1024: 'toxic'}, inplace=True)
+
 t_data_raw = t_data.copy()
 
 for c in t_data.columns[:-1]:
     t_data[c] = t_data[c].astype('bool')
-t_data[t_data.columns[-1]] = t_data[t_data.columns[-1]].astype('category')
-t_data.rename(columns={1024: 'toxic'}, inplace=True)
