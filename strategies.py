@@ -8,7 +8,7 @@ import sklearn.metrics as metrics
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold, LeaveOneOut
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, BaggingClassifier
 from imblearn.over_sampling import SMOTE
 from tqdm import tqdm
 
@@ -83,6 +83,64 @@ def KFold(X, y, nfolds, seed=None):
                         accuracy = curr_accuracy
     return opts
 
+def showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree):
+    prd_trn = best_tree.predict(trnX)
+    prd_tst = best_tree.predict(tstX)
+    ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)    
+
+def randomForests(data, target, kfold=True, quick=False, seed=None):
+    data_forests = data.copy()
+
+    y: np.ndarray = data_forests.pop(target).values
+    X: np.ndarray = data_forests.values
+    labels = pd.unique(y)
+    
+    if kfold:
+        trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
+    else:
+        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y)
+        prd_trn, prd_tst = None, None
+
+    n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
+    max_depths = [5, 10, 25]
+    max_features = [.1, .3, .5, .7, .9, 1]
+    if (quick):
+        n_estimators = [5, 10, 25, 50]
+        max_depths = [5]
+    best = ('', 0, 0)
+    last_best = 0
+    best_tree = None
+
+    cols = len(max_depths)
+    plt.figure()
+    fig, axs = plt.subplots(1, cols, figsize=(cols*ds.HEIGHT, ds.HEIGHT), squeeze=False)
+    pbar = tqdm(total=(len(n_estimators)*len(max_depths)*len(max_features)))
+    for k in range(len(max_depths)):
+        d = max_depths[k]
+        values = {}
+        for f in max_features:
+            yvalues = []
+            for n in n_estimators:
+                rf = RandomForestClassifier(n_estimators=n, max_depth=d, max_features=f)
+                rf.fit(trnX, trnY)
+                prdY = rf.predict(tstX)
+                pbar.update(1)
+                yvalues.append(metrics.accuracy_score(tstY, prdY))
+                if yvalues[-1] > last_best:
+                    best = (d, f, n)
+                    last_best = yvalues[-1]
+                    best_tree = rf
+
+            values[f] = yvalues
+        ds.multiple_line_chart(n_estimators, values, ax=axs[0, k], title='Random Forests with max_depth=%d'%d,
+                               xlabel='nr estimators', ylabel='accuracy', percentage=True)
+
+    pbar.close()
+    plt.show()
+    print('Best results with depth=%d, %1.2f features and %d estimators, with accuracy=%1.4f'%(best[0], best[1], best[2], last_best))
+    showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree)
+    return (trnX, tstX, y, trnY, tstY, best_tree)
+
 def gradientBoosting(data, target, kfold=True, quick=False, seed=None):
     data_gradient = data.copy()
     y: np.ndarray = data_gradient.pop(target).values
@@ -93,6 +151,7 @@ def gradientBoosting(data, target, kfold=True, quick=False, seed=None):
         trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
     else:
         trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y)
+        prd_trn, prd_tst = None, None
 
     n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
     max_depths = [5, 10, 25]
@@ -114,10 +173,10 @@ def gradientBoosting(data, target, kfold=True, quick=False, seed=None):
         for lr in learning_rate:
             yvalues = []
             for n in n_estimators:
-                pbar.update(1)
                 gb = GradientBoostingClassifier(n_estimators=n, max_depth=d, learning_rate=lr)
                 gb.fit(trnX, trnY)
                 prdY = gb.predict(tstX)
+                pbar.update(1)
                 yvalues.append(metrics.accuracy_score(tstY, prdY))
                 if yvalues[-1] > last_best:
                     best = (d, lr, n)
@@ -130,4 +189,5 @@ def gradientBoosting(data, target, kfold=True, quick=False, seed=None):
     pbar.close()
     plt.show()
     print('Best results with depth=%d, learning rate=%1.2f and %d estimators, with accuracy=%1.2f'%(best[0], best[1], best[2], last_best))
+    showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree)
     return (trnX, tstX, y, trnY, tstY, best_tree)
