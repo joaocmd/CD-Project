@@ -86,7 +86,80 @@ def KFold(X, y, nfolds, seed=None):
 def showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree):
     prd_trn = best_tree.predict(trnX)
     prd_tst = best_tree.predict(tstX)
-    ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)    
+    ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)
+    
+def decisionTrees(data, target, kfold=True, quick=False, seed=None):
+    data_forests = data.copy()
+    
+    y: np.ndarray = data_forests.pop(target).values
+    X: np.ndarray = data_forests.values
+    labels = pd.unique(y)
+
+    if kfold:
+        trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
+    else:
+        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
+        prd_trn, prd_tst = None, None
+
+    min_impurity_decrease = [0.025, 0.01, 0.005, 0.0025, 0.001]
+    max_depths = [2, 5, 10, 15, 20, 25]
+    criteria = ['entropy', 'gini']
+    if (quick):
+        min_impurity_decrease = [0.025, 0.01, 0.005, 0.0025, 0.001]
+        max_depths = [2, 5, 10]
+    best = ('',  0, 0.0)
+    last_best = 0
+    best_tree = None
+
+    plt.figure()
+    fig, axs = plt.subplots(1, 2, figsize=(16, 4), squeeze=False)
+    pbar = tqdm(total=(len(min_impurity_decrease)*len(max_depths)*len(criteria)))
+    for k in range(len(criteria)):
+        f = criteria[k]
+        values = {}
+        for d in max_depths:
+            yvalues = []
+            for imp in min_impurity_decrease:
+                tree = DecisionTreeClassifier(max_depth=d, criterion=f, min_impurity_decrease=imp)
+                tree.fit(trnX, trnY)
+                prdY = tree.predict(tstX)
+                pbar.update(1)
+                yvalues.append(metrics.accuracy_score(tstY, prdY))
+
+                if yvalues[-1] > last_best:
+                    best = (f, d, imp)
+                    last_best = yvalues[-1]
+                    best_tree = tree
+
+            values[d] = yvalues
+        ds.multiple_line_chart(min_impurity_decrease, values, ax=axs[0, k], title='Decision Trees with %s criteria'%f,
+                               xlabel='min_impurity_decrease', ylabel='accuracy', percentage=True)
+
+    pbar.close()
+    plt.show()
+    print('Best results achieved with %s criteria, depth=%d and min_impurity_decrease=%1.3f ==> accuracy=%1.3f'%(best[0], best[1], best[2], last_best))
+    # Get confusion matrix
+    showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree)
+    res = (trnX, tstX, y, trnY, tstY, best_tree)
+    
+    # Get overfitting
+    plt.figure()
+    fig, axs = plt.subplots(1, 1, figsize=(16, 4), squeeze=False)
+    values = {'Train':[], 'Test':[]}
+    pbar = tqdm(total=(len(min_impurity_decrease)))
+    for imp in min_impurity_decrease:
+        tree = DecisionTreeClassifier(max_depth=best[1], criterion=best[0], min_impurity_decrease=imp)
+        tree.fit(trnX, trnY)
+        prdY = tree.predict(tstX)
+        prdYTrain = tree.predict(trnX)
+        pbar.update(1)
+        values['Train'].append(metrics.accuracy_score(trnY, prdYTrain))
+        values['Test'].append(metrics.accuracy_score(tstY, prdY))
+
+    pbar.close()
+    ds.multiple_line_chart(min_impurity_decrease, values, ax=axs[0, 0], title='Overfitting for Decision Trees',
+                               xlabel='min_impurity_decrease', ylabel='accuracy', percentage=True)
+    return res
 
 def randomForests(data, target, kfold=True, quick=False, seed=None):
     data_forests = data.copy()
@@ -98,7 +171,7 @@ def randomForests(data, target, kfold=True, quick=False, seed=None):
     if kfold:
         trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
     else:
-        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y)
+        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
         prd_trn, prd_tst = None, None
 
     n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
@@ -150,7 +223,7 @@ def gradientBoosting(data, target, kfold=True, quick=False, seed=None):
     if kfold:
         trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
     else:
-        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y)
+        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
         prd_trn, prd_tst = None, None
 
     n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
