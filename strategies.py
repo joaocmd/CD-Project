@@ -87,6 +87,51 @@ def showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree):
     prd_trn = best_tree.predict(trnX)
     prd_tst = best_tree.predict(tstX)
     ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)
+
+def KNN(data, target, kfold=True, quick=False, seed=None):
+    data_knn = data.copy()
+    
+    y: np.ndarray = data_knn.pop(target).values
+    X: np.ndarray = data_knn.values
+    labels = pd.unique(y)
+    
+    if kfold:
+        trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
+    else:
+        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
+        prd_trn, prd_tst = None, None
+        
+    nvalues = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+    dist = ['manhattan', 'euclidean', 'chebyshev']
+    if (quick):
+        nvalues = [1, 3, 5, 7, 9, 11]
+    values = {}
+    best = (0, '', None, 0)
+    last_best = 0
+    pbar = tqdm(total=(len(nvalues)*len(dist)))
+    for d in dist:
+        yvalues = []
+        for n in nvalues:
+            knn = KNeighborsClassifier(n_neighbors=n, metric=d)
+            knn.fit(trnX, trnY)
+            prdY = knn.predict(tstX)
+            pbar.update(1)
+            yvalues.append(metrics.accuracy_score(tstY, prdY))
+            if yvalues[-1] > last_best:
+                best = (n, d, knn, yvalues[-1])
+                last_best = yvalues[-1]
+        values[d] = yvalues
+
+    pbar.close()
+    plt.figure()
+    ds.multiple_line_chart(nvalues, values, title='KNN variants', xlabel='n', ylabel='accuracy', percentage=True)
+    plt.show()
+    print('Best results with %d neighbors and %s, with accuracy %.2f'%(best[0], best[1], best[3]))
+    
+    prd_trn = best[2].predict(trnX)
+    prd_tst = best[2].predict(tstX)
+    ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)
+    return (trnX, tstX, y, trnY, tstY, best[2])
     
 def decisionTrees(data, target, kfold=True, quick=False, seed=None):
     data_forests = data.copy()
