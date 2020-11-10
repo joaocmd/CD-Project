@@ -10,6 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold, LeaveOneOut
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, BaggingClassifier
 from imblearn.over_sampling import SMOTE
+from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
 
 def getBalancing(data, target):
@@ -132,6 +133,77 @@ def KNN(data, target, kfold=True, quick=False, seed=None):
     prd_tst = best[2].predict(tstX)
     ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)
     return (trnX, tstX, y, trnY, tstY, best[2])
+
+def LogRegression(data, target, kfold=True, quick=False, seed=None):
+    data_regression = data.copy()
+    
+    y: np.ndarray = data_regression.pop(target).values
+    X: np.ndarray = data_regression.values
+    labels = pd.unique(y)
+
+    if kfold:
+        trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
+    else:
+        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
+        prd_trn, prd_tst = None, None
+        
+    n_iters = [50, 100, 150, 200, 250, 300]
+    penalties = ["l2", "none"]
+    if (quick):
+        n_iters = [50, 100, 150, 200]
+    best = (0, '')
+    last_best = 0
+    best_tree = None
+
+    plt.figure()
+    fig, axs = plt.subplots(1, 1, figsize=(ds.HEIGHT, ds.HEIGHT), squeeze=False)
+    values = {}
+    pbar = tqdm(total=(len(n_iters)*len(penalties)))
+    for k in range(len(penalties)):
+        p = penalties[k]
+        yvalues = []
+        for d in n_iters:
+            lr = LogisticRegression(penalty=p, max_iter=d)
+            lr.fit(trnX, trnY)
+            prdY = lr.predict(tstX)
+            pbar.update(1)
+            yvalues.append(metrics.accuracy_score(tstY, prdY))
+            if yvalues[-1] > last_best:
+                best = (d, p)
+                last_best = yvalues[-1]
+                best_tree = lr
+
+        values[p] = yvalues
+
+    ds.multiple_line_chart(n_iters, values, ax=axs[0, 0], title='Logistic Regression',
+                               xlabel='nr iterations', ylabel='accuracy', percentage=True)
+
+    pbar.close()
+    plt.show()
+    print('Best results with %d iterations and %s penalty, with accuracy=%1.4f'%(best[0], best[1], last_best))
+    # Get confusion matrix
+    showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree)
+    res = (trnX, tstX, y, trnY, tstY, best_tree)
+    
+    # Get overfitting
+    plt.figure()
+    fig, axs = plt.subplots(1, 1, figsize=(16, 4), squeeze=False)
+    values = {'Train':[], 'Test':[]}
+    pbar = tqdm(total=(len(n_iters)))
+    for iters in n_iters:
+        tree = LogisticRegression(penalty=best[1], max_iter=iters)
+        tree.fit(trnX, trnY)
+        prdY = tree.predict(tstX)
+        prdYTrain = tree.predict(trnX)
+        pbar.update(1)
+        values['Train'].append(metrics.accuracy_score(trnY, prdYTrain))
+        values['Test'].append(metrics.accuracy_score(tstY, prdY))
+
+    pbar.close()
+    ds.multiple_line_chart(n_iters, values, ax=axs[0, 0], title='Overfitting for Logistic Regression',
+                               xlabel='iterations', ylabel='accuracy', percentage=True)
+    return res
+    
     
 def decisionTrees(data, target, kfold=True, quick=False, seed=None):
     data_forests = data.copy()
