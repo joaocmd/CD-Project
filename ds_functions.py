@@ -1,4 +1,5 @@
 import itertools
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -10,7 +11,9 @@ import scipy
 import scipy.stats as _stats
 import numpy as np
 import pandas as pd
+import matplotlib.colors as colors
 
+COLORS = colors.CSS4_COLORS
 
 mdates._reset_epoch_test_example()
 mdates.set_epoch('0000-12-31T00:00:00')  # old epoch (pre MPL 3.3)
@@ -170,3 +173,42 @@ def histogram_with_distributions(ax: plt.Axes, series: pd.Series, var: str, bins
     ax.hist(values, bins, density=True)
     distributions = compute_known_distributions(values)
     multiple_line_chart(values, distributions, ax=ax, title='Best fit for %s'%var, xlabel=var, ylabel='')
+
+def plot_clusters(data, var1st, var2nd, clusters, centers, n_clusters: int, title: str,  ax: plt.Axes = None):
+    if ax is None:
+        ax = plt.gca()
+    ax.scatter(data.iloc[:, var1st], data.iloc[:, var2nd], c=clusters, alpha=0.5)
+    for k, col in zip(range(n_clusters), COLORS):
+        cluster_center = centers[k]
+        ax.plot(cluster_center[0], cluster_center[1], 'o', markerfacecolor=col, markeredgecolor='k', markersize=6)
+    ax.set_title(title)
+    ax.set_xlabel('var' + str(var1st))
+    ax.set_ylabel('var' + str(var2nd))
+
+
+def compute_centroids(data: pd.DataFrame, labels: np.ndarray) -> list:
+    n_vars = data.shape[1]
+    ext_data = pd.concat([data, pd.DataFrame(labels)], axis=1)
+    ext_data.columns = list(data.columns) + ['cluster']
+    clusters = pd.unique(labels)
+    n_clusters = len(clusters)
+    centers = [0] * n_clusters
+    for k in range(-1, n_clusters):
+        if k != -1:
+            cluster = ext_data[ext_data['cluster'] == k]
+            centers[k] = list(cluster.sum(axis=0))
+            centers[k] = [centers[k][j]/len(cluster) if len(cluster) > 0 else 0 for j in range(n_vars)]
+        else:
+            centers[k] = [0]*n_vars
+
+    return centers
+
+
+def compute_mse(X: np.ndarray, labels: np.ndarray, centroids: np.ndarray) -> float:
+    n = len(X)
+    centroid_per_record = [centroids[labels[i]] for i in range(n)]
+    partial = X - centroid_per_record
+    partial = list(partial * partial)
+    partial = [sum(el) for el in partial]
+    partial = sum(partial)
+    return math.sqrt(partial) / (n-1)
