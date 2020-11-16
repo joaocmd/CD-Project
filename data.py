@@ -136,5 +136,24 @@ def get_corr(data, minimum_cor=0.95):
         columns_tox += [most_cor.index[i][0], most_cor.index[i][1]]
     columns_tox = sorted(list(set(columns_tox)))
 
+    corr_mtx_toxicity = data.corr().loc[columns_tox, columns_tox]
+    return corr_mtx_toxicity
+
+def get_corr_with_target(data, target):
+    df = data.copy()
+    au_corr = df.corr().abs().unstack()
+    labels_to_drop = set()
+    cols = df.columns
+    for i in range(0, df.shape[1]):
+        for j in range(0, i+1):
+            labels_to_drop.add((cols[i], cols[j]))
+    most_cor = au_corr.drop(labels=labels_to_drop).sort_values(ascending=False)
+
+    columns_tox = []
+    for i in range(len(most_cor.index)):
+        columns_tox += [most_cor.index[i][0], most_cor.index[i][1]]
+    columns_tox = sorted(list(set(columns_tox)))
+
     corr_mtx_toxicity = t_data.corr().loc[columns_tox, columns_tox]
     return corr_mtx_toxicity
+    
