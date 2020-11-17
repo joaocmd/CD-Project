@@ -25,7 +25,7 @@ for c in t_data.columns[:-1]:
 t_data[t_data.columns[-1]] = t_data[t_data.columns[-1]].astype('category')
 t_data['toxic'].replace({'positive': True, 'negative': False}, inplace=True)
 
-def get_hf_data(filter_outliers=False, feature_selection=False, scaling="none", balancing="none"):
+def get_hf_data(filter_outliers=False, feature_selection=False, scaling="none"):
     data = hf_data_raw.copy()
     if (filter_outliers):
         # creatinine_phosphokinase, outliers above 3000
@@ -58,31 +58,10 @@ def get_hf_data(filter_outliers=False, feature_selection=False, scaling="none", 
     
     df_class_min = None
     df_class_max = None
-    unbal = None
-    if (balancing != "none"):
-        unbal = data.copy()
-        target_count = data['DEATH_EVENT'].value_counts()
-        min_class = target_count.idxmin()
-        ind_min_class = target_count.index.get_loc(min_class)
-        df_class_min = unbal[unbal['DEATH_EVENT'] == min_class]
-        df_class_max = unbal[unbal['DEATH_EVENT'] != min_class]
-     
-    if (balancing == "undersample"):
-        data = pd.concat([df_class_max.sample(len(df_class_min)), df_class_min])
-    
-    if (balancing == "oversample"):
-        data = pd.concat([df_class_min.sample(len(df_class_max), replace=True), df_class_max])
-        
-    if (balancing == "smote"):
-        smote = SMOTE(sampling_strategy='minority', random_state=42069)
-        y = unbal.pop('DEATH_EVENT').values
-        X = unbal.values
-        smote_X, smote_y = smote.fit_sample(X, y)
-        data = pd.concat([pd.DataFrame(smote_X, columns=unbal.columns), pd.DataFrame(smote_y, columns=['DEATH_EVENT'])], axis=1)
-        
+ 
     return data
 
-def get_t_data(feature_selection=False, balancing="none"):
+def get_t_data(feature_selection=False):
     data = t_data_raw.copy()
     
     if (feature_selection):
@@ -97,28 +76,31 @@ def get_t_data(feature_selection=False, balancing="none"):
     df_class_min = None
     df_class_max = None
     unbal = None
-    if (balancing != "none"):
-        unbal = data.copy()
-        target_count = data['toxic'].value_counts()
-        min_class = target_count.idxmin()
-        ind_min_class = target_count.index.get_loc(min_class)
-        df_class_min = unbal[unbal['toxic'] == min_class]
-        df_class_max = unbal[unbal['toxic'] != min_class]
+        
+    return data
+
+def balance(data: pd.DataFrame, strat: str, target: str):
+    unbal = data.copy()
+    target_count = data[target].value_counts()
+    min_class = target_count.idxmin()
+    ind_min_class = target_count.index.get_loc(min_class)
+    df_class_min = unbal[unbal[target] == min_class]
+    df_class_max = unbal[unbal[target] != min_class]
      
     if (balancing == "undersample"):
-        data = pd.concat([df_class_max.sample(len(df_class_min)), df_class_min])
+        res = pd.concat([df_class_max.sample(len(df_class_min)), df_class_min])
     
     if (balancing == "oversample"):
-        data = pd.concat([df_class_min.sample(len(df_class_max), replace=True), df_class_max])
+        res = pd.concat([df_class_min.sample(len(df_class_max), replace=True), df_class_max])
         
     if (balancing == "smote"):
         smote = SMOTE(sampling_strategy='minority', random_state=42069)
-        y = unbal.pop('toxic').values
+        y = unbal.pop(target).values
         X = unbal.values
         smote_X, smote_y = smote.fit_sample(X, y)
-        data = pd.concat([pd.DataFrame(smote_X, columns=unbal.columns), pd.DataFrame(smote_y, columns=['toxic'])], axis=1)
-        
-    return data
+        res = pd.concat([pd.DataFrame(smote_X, columns=unbal.columns), pd.DataFrame(smote_y, columns=[target])], axis=1)
+    
+    return res
 
 def get_corr(data, minimum_cor=0.95):
     df = data.copy()
