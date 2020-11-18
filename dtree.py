@@ -13,14 +13,23 @@ from sklearn.tree import export_graphviz
 from subprocess import call
 from strategies import KFold
 
-def dtree(data):
-    hf_df = data.copy().drop(columns=['time'])
+from data import balance
 
-    y: np.ndarray = hf_df.pop('DEATH_EVENT').values
-    X: np.ndarray = hf_df.values
+def dtree(data: pd.DataFrame, target: str, balancing=None):
+    df = data.copy()
+    columns = df.columns
+    
+    y: np.ndarray = df.pop(target).values
+    X: np.ndarray = df.values
     labels = pd.unique(y)
 
     trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5)
+    
+    if (balancing != None):
+        df = pd.DataFrame(data=np.hstack((trnX, np.array([trnY]).T)), columns=columns)
+        df = balance(df, balancing, target)
+        trnY = df.pop(target).to_numpy().T
+        trnX = df.to_numpy()
 
     min_impurity_decrease = [0.025, 0.01, 0.005, 0.0025, 0.001]
     max_depths = [2, 5, 10, 15, 20, 25]
@@ -40,12 +49,14 @@ def dtree(data):
                 tree = DecisionTreeClassifier(max_depth=d, criterion=f, min_impurity_decrease=imp)
                 tree.fit(trnX, trnY)
                 prdY = tree.predict(tstX)
+                cur_prd_trn = tree.predict(trnX)
                 yvalues.append(metrics.accuracy_score(tstY, prdY))
 
                 if yvalues[-1] > last_best:
                     best = (f, d, imp)
                     last_best = yvalues[-1]
                     best_tree = tree
+                    prd_trn = cur_prd_trn
 
             values[d] = yvalues
         ds.multiple_line_chart(min_impurity_decrease, values, ax=axs[0, k], title='Decision Trees with %s criteria'%f,

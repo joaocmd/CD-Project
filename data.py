@@ -87,13 +87,13 @@ def balance(data: pd.DataFrame, strat: str, target: str):
     df_class_min = unbal[unbal[target] == min_class]
     df_class_max = unbal[unbal[target] != min_class]
      
-    if (balancing == "undersample"):
+    if (strat == "undersample"):
         res = pd.concat([df_class_max.sample(len(df_class_min)), df_class_min])
     
-    if (balancing == "oversample"):
+    if (strat == "oversample"):
         res = pd.concat([df_class_min.sample(len(df_class_max), replace=True), df_class_max])
         
-    if (balancing == "smote"):
+    if (strat == "smote"):
         smote = SMOTE(sampling_strategy='minority', random_state=42069)
         y = unbal.pop(target).values
         X = unbal.values
