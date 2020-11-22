@@ -12,6 +12,7 @@ import scipy.stats as _stats
 import numpy as np
 import pandas as pd
 import matplotlib.colors as colors
+from sklearn.preprocessing import OneHotEncoder
 
 COLORS = colors.CSS4_COLORS
 
@@ -30,7 +31,7 @@ def choose_grid(nr):
         return (nr // NR_COLUMNS, NR_COLUMNS) if nr % NR_COLUMNS == 0 else (nr // NR_COLUMNS + 1, NR_COLUMNS)
 
 
-def set_axes(xvalues: list, ax: plt.Axes = None, title: str = '', xlabel: str = '', ylabel: str = '', percentage=False):
+def set_axes(xvalues: list, ax: plt.Axes = None, title: str = '', xlabel: str = '', ylabel: str = '', percentage=False, rotation=0):
     if ax is None:
         ax = plt.gca()
     ax.set_title(title)
@@ -40,7 +41,7 @@ def set_axes(xvalues: list, ax: plt.Axes = None, title: str = '', xlabel: str = 
         ax.set_ylim(0.0, 1.0)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_xticklabels(xvalues, fontsize='small', ha='center')
+    ax.set_xticklabels(xvalues, fontsize='small', ha='center', rotation=rotation)
 
     return ax
 
@@ -58,8 +59,8 @@ def set_locators(xvalues: list, ax: plt.Axes = None):
 
 
 def plot_line(xvalues: list, yvalues: list, ax: plt.Axes = None, title: str = '', xlabel: str = '',
-              ylabel: str = '', percentage=False):
-    ax = set_axes(xvalues, ax=ax, title=title, xlabel=xlabel, ylabel=ylabel, percentage=percentage)
+              ylabel: str = '', percentage=False, rotation = 0):
+    ax = set_axes(xvalues, ax=ax, title=title, xlabel=xlabel, ylabel=ylabel, percentage=percentage, rotation=rotation)
     ax = set_locators(xvalues, ax=ax)
     ax.plot(xvalues,  yvalues, c=cfg.LINE_COLOR)
 
@@ -212,3 +213,14 @@ def compute_mse(X: np.ndarray, labels: np.ndarray, centroids: np.ndarray) -> flo
     partial = [sum(el) for el in partial]
     partial = sum(partial)
     return math.sqrt(partial) / (n-1)
+
+def dummify(df, cols_to_dummify):
+    one_hot_encoder = OneHotEncoder(sparse=False)
+
+    for var in cols_to_dummify:
+        one_hot_encoder.fit(df[var].values.reshape(-1, 1))
+        feature_names = one_hot_encoder.get_feature_names([var])
+        transformed_data = one_hot_encoder.transform(df[var].values.reshape(-1, 1))
+        df = pd.concat((df, pd.DataFrame(transformed_data, columns=feature_names)), 1)
+        df.pop(var)
+    return df
