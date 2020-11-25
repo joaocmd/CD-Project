@@ -55,27 +55,31 @@ def get_hf_data(filter_outliers=False, feature_selection=False, scaling="none"):
         transf = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_nr)
         norm_data_minmax = pd.DataFrame(transf.transform(df_nr), columns= df_nr.columns)
         data = norm_data_minmax.join(df_sb, how='inner')
-    
-    df_class_min = None
-    df_class_max = None
  
     return data
+
 
 def get_t_data(feature_selection=False):
     data = t_data_raw.copy()
     
-    if (feature_selection):
-        # 685 stays
-        # Goes 78, 288, 467, 473, 646, 758, 871, 960 
-        data = data.drop(columns=[78, 288, 467, 473, 646, 758, 871, 960])
+    def get_redundant_pairs(df):
+        cols_to_drop = set()
+        for i in range(0, df.shape[1]-1):
+            if i in cols_to_drop:
+                continue
+            for j in range(i+1, df.shape[1]-1):
+                if df[i][j] > 0.85:
+                    cols_to_drop.add(j)
 
-        # Stays 456, 260, 383, 465, 349, 116, 46, 178, 414
-        # Goes 819, 683, 657, 656, 424, 408, 53, 405, 759
-        data = data.drop(columns=[819, 683, 657, 656, 424, 408, 53, 405, 759])
-    
-    df_class_min = None
-    df_class_max = None
-    unbal = None
+            return list(cols_to_drop)
+
+    def remove_redundant_variables(df):
+        au_corr = df.corr().abs()
+        labels_to_drop = get_redundant_pairs(au_corr)
+        return df.copy().drop(columns=labels_to_drop)
+
+    if (feature_selection):
+        data = remove_redundant_variables(data)
         
     return data
 
