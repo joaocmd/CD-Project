@@ -9,9 +9,11 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold, LeaveOneOut
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, BaggingClassifier
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from imblearn.over_sampling import SMOTE
 from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
+from data import balance
 
 def getBalancing(data, target):
     target_count = data[target].value_counts()
@@ -88,8 +90,49 @@ def showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree):
     prd_trn = best_tree.predict(trnX)
     prd_tst = best_tree.predict(tstX)
     ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)
+    
+def naiveBayes(data, target, kfold=True, seed=None, balancing=None):
+    data_nb = data.copy()
+    
+    y: np.ndarray = data_nb.pop(target).values
+    X: np.ndarray = data_nb.values
+    labels = pd.unique(y)
+    
+    if kfold:
+        trnY, prd_trn, tstY, prd_tst, trnX, tstX = KFold(X, y, 5, seed)
+    else:
+        trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
+        prd_trn, prd_tst = None, None
+        
+    if (balancing != None):
+        df = pd.DataFrame(data=np.hstack((trnX, np.array([trnY]).T)), columns=data.columns)
+        df = balance(df, balancing, target)
+        trnY = df.pop(target).to_numpy().T
+        trnX = df.to_numpy()
 
-def KNN(data, target, kfold=True, quick=False, seed=None):
+    clf = GaussianNB()
+    clf.fit(trnX, trnY)
+    prd_trn = clf.predict(trnX)
+    prd_tst = clf.predict(tstX)
+    ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)
+    
+    estimators = {'GaussianNB': GaussianNB(),
+              'MultinomialNB': MultinomialNB(),
+              'BernoulliNB': BernoulliNB()}
+
+    xvalues = []
+    yvalues = []
+    for clf in estimators:
+        xvalues.append(clf)
+        estimators[clf].fit(trnX, trnY)
+        prdY = estimators[clf].predict(tstX)
+        yvalues.append(metrics.accuracy_score(tstY, prdY))
+
+    plt.figure()
+    ds.bar_chart(xvalues, yvalues, title='Comparison of Naive Bayes Models', ylabel='accuracy', percentage=True)
+    plt.show()
+
+def KNN(data, target, kfold=True, quick=False, seed=None, balancing=None):
     data_knn = data.copy()
     
     y: np.ndarray = data_knn.pop(target).values
@@ -101,6 +144,12 @@ def KNN(data, target, kfold=True, quick=False, seed=None):
     else:
         trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
         prd_trn, prd_tst = None, None
+        
+    if (balancing != None):
+        df = pd.DataFrame(data=np.hstack((trnX, np.array([trnY]).T)), columns=data.columns)
+        df = balance(df, balancing, target)
+        trnY = df.pop(target).to_numpy().T
+        trnX = df.to_numpy()
         
     nvalues = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
     dist = ['manhattan', 'euclidean', 'chebyshev']
@@ -134,7 +183,7 @@ def KNN(data, target, kfold=True, quick=False, seed=None):
     ds.plot_evaluation_results(pd.unique(y), trnY, prd_trn, tstY, prd_tst)
     return (trnX, tstX, y, trnY, tstY, best[2])
 
-def LogRegression(data, target, kfold=True, quick=False, seed=None):
+def LogRegression(data, target, kfold=True, quick=False, seed=None, balancing=None):
     data_regression = data.copy()
     
     y: np.ndarray = data_regression.pop(target).values
@@ -146,6 +195,12 @@ def LogRegression(data, target, kfold=True, quick=False, seed=None):
     else:
         trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
         prd_trn, prd_tst = None, None
+    
+    if (balancing != None):
+        df = pd.DataFrame(data=np.hstack((trnX, np.array([trnY]).T)), columns=data.columns)
+        df = balance(df, balancing, target)
+        trnY = df.pop(target).to_numpy().T
+        trnX = df.to_numpy()
         
     n_iters = [50, 100, 150, 200, 250, 300]
     penalties = ["l2", "none"]
@@ -205,7 +260,7 @@ def LogRegression(data, target, kfold=True, quick=False, seed=None):
     return res
     
     
-def decisionTrees(data, target, kfold=True, quick=False, seed=None):
+def decisionTrees(data, target, kfold=True, quick=False, seed=None, balancing=None):
     data_forests = data.copy()
     
     y: np.ndarray = data_forests.pop(target).values
@@ -217,6 +272,12 @@ def decisionTrees(data, target, kfold=True, quick=False, seed=None):
     else:
         trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
         prd_trn, prd_tst = None, None
+        
+    if (balancing != None):
+        df = pd.DataFrame(data=np.hstack((trnX, np.array([trnY]).T)), columns=data.columns)
+        df = balance(df, balancing, target)
+        trnY = df.pop(target).to_numpy().T
+        trnX = df.to_numpy()
 
     min_impurity_decrease = [0.025, 0.01, 0.005, 0.0025, 0.001]
     max_depths = [2, 5, 10, 15, 20, 25]
@@ -278,7 +339,7 @@ def decisionTrees(data, target, kfold=True, quick=False, seed=None):
                                xlabel='min_impurity_decrease', ylabel='accuracy', percentage=True)
     return res
 
-def randomForests(data, target, kfold=True, quick=False, seed=None):
+def randomForests(data, target, kfold=True, quick=False, seed=None, balancing=None):
     data_forests = data.copy()
 
     y: np.ndarray = data_forests.pop(target).values
@@ -290,6 +351,12 @@ def randomForests(data, target, kfold=True, quick=False, seed=None):
     else:
         trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
         prd_trn, prd_tst = None, None
+        
+    if (balancing != None):
+        df = pd.DataFrame(data=np.hstack((trnX, np.array([trnY]).T)), columns=data.columns)
+        df = balance(df, balancing, target)
+        trnY = df.pop(target).to_numpy().T
+        trnX = df.to_numpy()
 
     n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
     max_depths = [5, 10, 25]
@@ -331,7 +398,7 @@ def randomForests(data, target, kfold=True, quick=False, seed=None):
     showConfusionMatrix(trnX, tstX, y, trnY, tstY, best_tree)
     return (trnX, tstX, y, trnY, tstY, best_tree)
 
-def gradientBoosting(data, target, kfold=True, quick=False, seed=None):
+def gradientBoosting(data, target, kfold=True, quick=False, seed=None, balancing=None):
     data_gradient = data.copy()
     y: np.ndarray = data_gradient.pop(target).values
     X: np.ndarray = data_gradient.values
@@ -342,6 +409,12 @@ def gradientBoosting(data, target, kfold=True, quick=False, seed=None):
     else:
         trnX, tstX, trnY, tstY = train_test_split(X, y, train_size=0.7, stratify=y, random_state=seed)
         prd_trn, prd_tst = None, None
+        
+    if (balancing != None):
+        df = pd.DataFrame(data=np.hstack((trnX, np.array([trnY]).T)), columns=data.columns)
+        df = balance(df, balancing, target)
+        trnY = df.pop(target).to_numpy().T
+        trnX = df.to_numpy()
 
     n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
     max_depths = [5, 10, 25]
