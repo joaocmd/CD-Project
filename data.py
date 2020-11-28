@@ -42,6 +42,7 @@ def get_hf_data(filter_outliers=False, feature_selection=False, scaling="none"):
         
     df_nr = None
     df_sb = None
+    target = data.pop('DEATH_EVENT')
     if (scaling != "none"):
         df_nr = pd.DataFrame(data, columns=data.select_dtypes(include=['float64','int64']).columns) 
         df_sb = pd.DataFrame(data, columns=data.select_dtypes(include=['bool']).columns)
@@ -58,6 +59,7 @@ def get_hf_data(filter_outliers=False, feature_selection=False, scaling="none"):
     
     df_class_min = None
     df_class_max = None
+    data['DEATH_EVENT'] = target
  
     return data
 
