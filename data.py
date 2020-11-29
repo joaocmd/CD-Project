@@ -63,27 +63,28 @@ def get_hf_data(filter_outliers=False, feature_selection=False, scaling="none"):
  
     return data
 
-def get_t_data(feature_selection=False):
+def get_t_data(feature_selection=0):
     data = t_data_raw.copy()
     
-    def get_redundant_pairs(df):
+    def get_redundant_pairs(df, ratio):
         cols_to_drop = set()
         for i in range(0, df.shape[1]-1):
             if i in cols_to_drop:
                 continue
             for j in range(i+1, df.shape[1]-1):
-                if df[i][j] > 0.85:
-                    cols_to_drop.add(j)
+                if df[i][j] > ratio:
+                    cols_to_drop.add(j)    
+        return list(cols_to_drop)
 
-            return list(cols_to_drop)
-
-    def remove_redundant_variables(df):
+    def remove_redundant_variables(df, ratio):
         au_corr = df.corr().abs()
-        labels_to_drop = get_redundant_pairs(au_corr)
-        return df.copy().drop(columns=labels_to_drop)
+        labels_to_drop = get_redundant_pairs(au_corr, ratio)
+        print(df.drop(columns=labels_to_drop))
+        return df.drop(columns=labels_to_drop)
 
-    if (feature_selection):
-        data = remove_redundant_variables(data)
+    if feature_selection != 0:
+        data = remove_redundant_variables(data, feature_selection)
+        print(data)
         
     return data
 
