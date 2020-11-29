@@ -79,12 +79,10 @@ def get_t_data(feature_selection=0):
     def remove_redundant_variables(df, ratio):
         au_corr = df.corr().abs()
         labels_to_drop = get_redundant_pairs(au_corr, ratio)
-        print(df.drop(columns=labels_to_drop))
         return df.drop(columns=labels_to_drop)
 
     if feature_selection != 0:
         data = remove_redundant_variables(data, feature_selection)
-        print(data)
         
     return data
 
