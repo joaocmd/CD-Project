@@ -80,6 +80,7 @@ def DecisionTreesKFold(data, target, balancing=None):
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    print('min_impurity_decrease, max_depth, criteria')
     multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
@@ -107,6 +108,7 @@ def kNNKFold(data, target, balancing=None):
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    print('dist, n')
     multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
@@ -167,6 +169,7 @@ def RandomForestsKFold(data, target, balancing=None):
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    print('max_depth, max_features, n_estimators')
     multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
@@ -199,5 +202,6 @@ def XGBoostKFold(data, target, balancing=None):
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    print('max_depth, learning_rate, n_estimators')
     multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
