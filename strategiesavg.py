@@ -80,7 +80,7 @@ def DecisionTreesKFold(data, target, balancing=None):
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
-    print('min_impurity_decrease, max_depth, criteria')
+    print('criteria, max_depth, min_impurity_decrease')
     multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
