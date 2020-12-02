@@ -136,3 +136,68 @@ def NaiveBayesKFold(data, target, balancing=None):
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
     multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
+
+def RandomForestsTryParams(X_train, X_test, y_train, y_test, labels):
+    n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
+    max_depths = [5, 10, 25]
+    max_features = [.1, .3, .5, .7, .9, 1]
+
+    results = {}
+    pbar = tqdm(total=(len(n_estimators)*len(max_depths)*len(max_features)))
+    for k in range(len(max_depths)):
+        d = max_depths[k]
+        values = {}
+        for f in max_features:
+            yvalues = []
+            for n in n_estimators:
+                rf = RandomForestClassifier(n_estimators=n, max_depth=d, max_features=f)
+                rf.fit(X_train, y_train)
+                prd_trn = rf.predict(X_train)
+                prd_tst = rf.predict(X_test)
+                pbar.update(1)
+
+                results[(max_depths[k], f, n)] = ds.calc_evaluations_results(labels, y_train, prd_trn, y_test, prd_tst)
+
+    pbar.close()
+    return results
+
+def RandomForestsKFold(data, target, balancing=None):
+    results = KFold(data, target, RandomForestsTryParams, balancing)
+    best = [params for params in results if
+            all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
+
+    fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    return (best, results[best])
+
+def XGBoostTryParams(X_train, X_test, y_train, y_test, labels):
+    n_estimators = [5, 10, 25, 50, 75, 100, 150, 200, 250, 300]
+    max_depths = [5, 10, 25]
+    learning_rate = [.1, .3, .5, .7, .9]
+
+    results = {}
+    pbar = tqdm(total=(len(n_estimators)*len(max_depths)*len(learning_rate)))
+    for d in max_depths:
+        values = {}
+        for lr in learning_rate:
+            yvalues = []
+            for n in n_estimators:
+                gb = GradientBoostingClassifier(n_estimators=n, max_depth=d, learning_rate=lr)
+                gb.fit(trnX, trnY)
+                prd_trn = gb.predict(X_train)
+                prd_tst = gb.predict(X_test)
+                pbar.update(1)
+
+                results[(d, lr, n)] = ds.calc_evaluations_results(labels, y_train, prd_trn, y_test, prd_tst)
+
+    pbar.close()
+    return results
+
+def XGBoostKFold(data, target, balancing=None):
+    results = KFold(data, target, XGBoostTryParams, balancing)
+    best = [params for params in results if
+            all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
+
+    fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    return (best, results[best])
