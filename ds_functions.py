@@ -124,6 +124,18 @@ def plot_confusion_matrix(cnf_matrix: np.ndarray, classes_names: np.ndarray,
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         ax.text(j, i, format(cm[i, j], fmt), color='w', horizontalalignment="center")
 
+def calc_evaluations_results(labels: np.ndarray, trn_y, prd_trn, tst_y, prd_tst):
+    cnf_mtx_trn = metrics.confusion_matrix(trn_y, prd_trn, labels)
+    tn_trn, fp_trn, fn_trn, tp_trn = cnf_mtx_trn.ravel()
+    cnf_mtx_tst = metrics.confusion_matrix(tst_y, prd_tst, labels)
+    tn_tst, fp_tst, fn_tst, tp_tst = cnf_mtx_tst.ravel()
+
+    return {'Accuracy': [(tn_trn + tp_trn) / (tn_trn + tp_trn + fp_trn + fn_trn),
+                         (tn_tst + tp_tst) / (tn_tst + tp_tst + fp_tst + fn_tst)],
+            'Recall': [tp_trn / (tp_trn + fn_trn), tp_tst / (tp_tst + fn_tst)],
+            'Specificity': [tn_trn / (tn_trn + fp_trn), tn_tst / (tn_tst + fp_tst)],
+            'Precision': [tp_trn / (tp_trn + fp_trn), tp_tst / (tp_tst + fp_tst)]}
+
 
 def plot_evaluation_results(labels: np.ndarray, trn_y, prd_trn, tst_y, prd_tst):
     cnf_mtx_trn = metrics.confusion_matrix(trn_y, prd_trn, labels)
