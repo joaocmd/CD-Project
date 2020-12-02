@@ -26,6 +26,7 @@ def KFold(data, target, try_params, balancing=None):
 
     opts=()
     accuracy = 0
+    scores = []
     for train_index, test_index in skf.split(X, y):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
@@ -36,8 +37,8 @@ def KFold(data, target, try_params, balancing=None):
             y_train = df.pop(target).to_numpy().T
             X_train = df.to_numpy()
 
-        scores = [try_params(X_train, X_test, y_train, y_test, pd.unique(y))]
-
+        scores += [try_params(X_train, X_test, y_train, y_test, pd.unique(y))]
+    
     avg = calculate_avg_results(scores)
     return avg
 
@@ -50,7 +51,6 @@ def calculate_avg_results(results):
                 res[params] = {}
             res[params][metric] = [statistics.mean([fold[params][metric][0] for fold in results]),
                                    statistics.mean([fold[params][metric][1] for fold in results])]
-    #print(res)
     return res
 
 def DecisionTreeTryParams(X_train, X_test, y_train, y_test, labels):
@@ -89,7 +89,7 @@ def kNNTryParams(X_train, X_test, y_train, y_test, labels):
     nvalues = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
     dist = ['manhattan', 'euclidean', 'chebyshev']
     results = {}
-    pbar = tqdm(total=(len(estimators)*len(dist)))
+    pbar = tqdm(total=(len(nvalues)*len(dist)))
     for d in dist:
         for n in nvalues:
             knn = KNeighborsClassifier(n_neighbors=n, metric=d)
