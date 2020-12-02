@@ -9,6 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold, LeaveOneOut
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, BaggingClassifier
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from imblearn.over_sampling import SMOTE
 from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
@@ -120,7 +121,7 @@ def NaiveBayesTryParams(X_train, X_test, y_train, y_test, labels):
     results = {}
     pbar = tqdm(total=(len(estimators)))
     for clf in estimators:
-        estimators[clf].fit(trnX, trnY)
+        estimators[clf].fit(X_train, y_train)
         prd_tst = estimators[clf].predict(X_test)
         prd_trn = estimators[clf].predict(X_train)
         pbar.update(1)
