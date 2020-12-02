@@ -79,4 +79,28 @@ def DecisionTreesKFold(data, target, balancing=None):
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
     multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
+
+def kNNTryParams(X_train, X_test, y_train, y_test, labels):             
+    nvalues = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+    dist = ['manhattan', 'euclidean', 'chebyshev']
+    results = {}
+    for d in dist:
+        for n in nvalues:
+            knn = KNeighborsClassifier(n_neighbors=n, metric=d)
+            knn.fit(X_train, y_train)
+            prd_tst = knn.predict(X_test)
+            prd_trn = knn.predict(X_train)
+            
+            results[(d, n)] = ds.calc_evaluations_results(labels, y_train, prd_trn, y_test, prd_tst)
+
+    return results
+
+def kNNKFold(data, target, balancing=None):
+    results = KFold(data, target, kNNTryParams, balancing)
+    best = [params for params in results if 
+        all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
+    
+    fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    return (best, results[best])
     
