@@ -187,7 +187,7 @@ def XGBoostTryParams(X_train, X_test, y_train, y_test, labels):
             yvalues = []
             for n in n_estimators:
                 gb = GradientBoostingClassifier(n_estimators=n, max_depth=d, learning_rate=lr)
-                gb.fit(trnX, trnY)
+                gb.fit(X_train, y_train)
                 prd_trn = gb.predict(X_train)
                 prd_tst = gb.predict(X_test)
                 pbar.update(1)
