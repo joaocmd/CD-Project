@@ -58,6 +58,7 @@ def DecisionTreeTryParams(X_train, X_test, y_train, y_test, labels):
     criteria = ['entropy', 'gini']
 
     results = {}
+    pbar = tqdm(total=(len(min_impurity_decrease)*len(max_depths)*len(criteria)))
     for k in range(len(criteria)):
         f = criteria[k]
         for d in max_depths:
@@ -66,9 +67,11 @@ def DecisionTreeTryParams(X_train, X_test, y_train, y_test, labels):
                 tree.fit(X_train, y_train)
                 prd_trn = tree.predict(X_train)
                 prd_tst = tree.predict(X_test)
+                pbar.update(1)
 
                 results[(f, d, imp)] = ds.calc_evaluations_results(labels, y_train, prd_trn, y_test, prd_tst)
 
+    pbar.close()
     return results
 
 def DecisionTreesKFold(data, target, balancing=None):
@@ -84,19 +87,49 @@ def kNNTryParams(X_train, X_test, y_train, y_test, labels):
     nvalues = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
     dist = ['manhattan', 'euclidean', 'chebyshev']
     results = {}
+    pbar = tqdm(total=(len(estimators)*len(dist)))
     for d in dist:
         for n in nvalues:
             knn = KNeighborsClassifier(n_neighbors=n, metric=d)
             knn.fit(X_train, y_train)
             prd_tst = knn.predict(X_test)
             prd_trn = knn.predict(X_train)
+            pbar.update(1)
 
             results[(d, n)] = ds.calc_evaluations_results(labels, y_train, prd_trn, y_test, prd_tst)
 
+    pbar.close()
     return results
 
 def kNNKFold(data, target, balancing=None):
     results = KFold(data, target, kNNTryParams, balancing)
+    best = [params for params in results if
+            all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
+
+    fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
+    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    return (best, results[best])
+
+def NaiveBayesTryParams(X_train, X_test, y_train, y_test, labels):
+    estimators = {'GaussianNB': GaussianNB(),
+                  'MultinomialNB': MultinomialNB(),
+                  'BernoulliNB': BernoulliNB()}
+
+    results = {}
+    pbar = tqdm(total=(len(estimators)))
+    for clf in estimators:
+        estimators[clf].fit(trnX, trnY)
+        prd_tst = estimators[clf].predict(X_test)
+        prd_trn = estimators[clf].predict(X_train)
+        pbar.update(1)
+        
+        results[clf] = ds.calc_evaluations_results(labels, y_train, prd_trn, y_test, prd_tst)
+    pbar.close()
+    
+    return results
+
+def NaiveBayesKFold(data, target, balancing=None):
+    results = KFold(data, target, NaiveBayesTryParams, balancing)
     best = [params for params in results if
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
