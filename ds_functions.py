@@ -82,7 +82,7 @@ def bar_chart(xvalues: list, yvalues: list, ax: plt.Axes = None, title: str = ''
 
 
 def multiple_bar_chart(xvalues: list, yvalues: dict, ax: plt.Axes = None, title: str = '',
-                       xlabel: str = '', ylabel: str = '', percentage=False):
+                       xlabel: str = '', ylabel: str = '', percentage=False, error=None):
     ax = set_axes(xvalues, ax=ax, title=title, xlabel=xlabel, ylabel=ylabel, percentage=percentage)
 
     x = np.arange(len(xvalues))  # the label locations
@@ -92,7 +92,7 @@ def multiple_bar_chart(xvalues: list, yvalues: dict, ax: plt.Axes = None, title:
     step = width / len(xvalues)
     i: int = 0
     for metric in yvalues:
-        ax.bar(x + i*width, yvalues[metric], width=width, align='center', label=metric)
+        ax.bar(x + i*width, yvalues[metric], width=width, align='center', label=metric, yerr=error[metric])
         i += 1
     ax.set_xticks(x + width/len(xvalues) - step/2)
     ax.legend(fontsize='x-small', title_fontsize='small')

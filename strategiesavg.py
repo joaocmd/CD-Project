@@ -39,19 +39,23 @@ def KFold(data, target, try_params, balancing=None):
 
         scores += [try_params(X_train, X_test, y_train, y_test, pd.unique(y))]
     
-    avg = calculate_avg_results(scores)
-    return avg
+    avg, std = calculate_avg_results(scores)
+    return (avg, std)
 
 def calculate_avg_results(results):
     metrics = ['Accuracy', 'Recall', 'Specificity', 'Precision']
     res = {}
+    std = {}
     for metric in metrics:
         for params in results[0]:
             if params not in res:
                 res[params] = {}
+                std[params] = {}
             res[params][metric] = [statistics.mean([fold[params][metric][0] for fold in results]),
                                    statistics.mean([fold[params][metric][1] for fold in results])]
-    return res
+            std[params][metric] = [np.std([fold[params][metric][0] for fold in results]),
+                                  np.std([fold[params][metric][1] for fold in results])]
+    return (res, std)
 
 def DecisionTreeTryParams(X_train, X_test, y_train, y_test, labels):
     min_impurity_decrease = [0.025, 0.01, 0.005, 0.0025, 0.001]
@@ -76,13 +80,13 @@ def DecisionTreeTryParams(X_train, X_test, y_train, y_test, labels):
     return results
 
 def DecisionTreesKFold(data, target, balancing=None):
-    results = KFold(data, target, DecisionTreeTryParams, balancing)
+    results, error = KFold(data, target, DecisionTreeTryParams, balancing)
     best = [params for params in results if
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
     print('criteria, max_depth, min_impurity_decrease')
-    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    multiple_bar_chart(['Train', 'Test'], results[best], error=error[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
 def kNNTryParams(X_train, X_test, y_train, y_test, labels):
@@ -104,13 +108,13 @@ def kNNTryParams(X_train, X_test, y_train, y_test, labels):
     return results
 
 def kNNKFold(data, target, balancing=None):
-    results = KFold(data, target, kNNTryParams, balancing)
+    results, std = KFold(data, target, kNNTryParams, balancing)
     best = [params for params in results if
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
     print('dist, n')
-    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    multiple_bar_chart(['Train', 'Test'], results[best], error=std[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
 def NaiveBayesTryParams(X_train, X_test, y_train, y_test, labels):
@@ -132,12 +136,12 @@ def NaiveBayesTryParams(X_train, X_test, y_train, y_test, labels):
     return results
 
 def NaiveBayesKFold(data, target, balancing=None):
-    results = KFold(data, target, NaiveBayesTryParams, balancing)
+    results, error = KFold(data, target, NaiveBayesTryParams, balancing)
     best = [params for params in results if
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
-    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    multiple_bar_chart(['Train', 'Test'], results[best], error=error[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
 def RandomForestsTryParams(X_train, X_test, y_train, y_test, labels):
@@ -165,13 +169,13 @@ def RandomForestsTryParams(X_train, X_test, y_train, y_test, labels):
     return results
 
 def RandomForestsKFold(data, target, balancing=None):
-    results = KFold(data, target, RandomForestsTryParams, balancing)
+    results, error = KFold(data, target, RandomForestsTryParams, balancing)
     best = [params for params in results if
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
     print('max_depth, max_features, n_estimators')
-    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    multiple_bar_chart(['Train', 'Test'], results[best], error=error[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
 
 def XGBoostTryParams(X_train, X_test, y_train, y_test, labels):
@@ -198,11 +202,11 @@ def XGBoostTryParams(X_train, X_test, y_train, y_test, labels):
     return results
 
 def XGBoostKFold(data, target, balancing=None):
-    results = KFold(data, target, XGBoostTryParams, balancing)
+    results, error = KFold(data, target, XGBoostTryParams, balancing)
     best = [params for params in results if
             all(results[params]['Accuracy'][1] >= results[x]['Accuracy'][1] for x in results)][0]
 
     fig, axs = plt.subplots(1, 2, figsize=(2 * 4, 4))
     print('max_depth, learning_rate, n_estimators')
-    multiple_bar_chart(['Train', 'Test'], results[best], ax=axs[0], title="Model's performance over Train and Test sets")
+    multiple_bar_chart(['Train', 'Test'], results[best], error=error[best], ax=axs[0], title="Model's performance over Train and Test sets")
     return (best, results[best])
