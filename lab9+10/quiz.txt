@@ -1,0 +1,16 @@
+1 - covid - none
+	death - normal
+
+2 - covid - yes
+	death - yes
+	
+3 - covid - week
+	death - month
+	
+4 - 1, 3
+
+5 - covid - diff, agregation
+	death - none
+
+7 - covid - <1000
+	death - <1000
