@@ -1,7 +1,7 @@
 1 - covid - none
 	death - normal
 
-2 - covid - yes
+2 - covid - no
 	death - yes
 	
 3 - covid - week
